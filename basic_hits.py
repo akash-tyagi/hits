@@ -3,15 +3,16 @@ Created on 14-Jan-2015
 
 @author: akash
 '''
-import json
-import copy
-import twitter_crawler
 from collections import defaultdict
+import copy
+import json
+
 
 class Basic_Hits():
     '''
-        Class to find the hubs and authorities
+        Class to find the hubs and authorities in a given list
     '''
+    SPAM_HUB_ID = 1
     def __init__(self):
         self.user_list = {}
         self.user_score_list = {}
@@ -30,31 +31,32 @@ class Basic_Hits():
             self.user_score_list[user_data[0]]['auth'] = 1.0
             self.user_score_list[user_data[0]]['hub'] = 1.0
         print "Parsing Done"
-    
+
+    def update_auth_hub_score(self):
+        new_score_list = defaultdict(dict)
+        for user_id, data_dict in self.user_list.iteritems():
+            new_score_list[user_id] = {'auth':0.0,'hub':0.0}
+            #Calculate the auth score
+            for in_user_id in data_dict['in']:
+                new_score_list[user_id]['auth'] += self.user_score_list[in_user_id]['hub']
+            new_score_list[user_id]['auth'] /= 50
+            
+            #Calculate the hub score
+            for out_user_id in  data_dict['out']:
+                new_score_list[user_id]['hub'] += self.user_score_list[out_user_id]['auth']
+            new_score_list[user_id]['hub'] /= 50
+                
+        self.user_score_list = copy.deepcopy(new_score_list)
+            
     def get_hits(self):
         '''
             calculate hubs and authority scores
         ''' 
-        new_score_list = defaultdict(dict)
-        
         for i in range(6):
-            for user_id, data_dict in self.user_list.iteritems():
-                new_score_list[user_id] = {'auth':0,'hub':0}
-                #Calculate the auth score
-                for in_user_id in data_dict['in']:
-                    new_score_list[user_id]['auth'] += self.user_score_list[in_user_id]['hub']
-                new_score_list[user_id]['auth'] /= 100
-                
-                #Calculate the hub score
-                for out_user_id in  data_dict['out']:
-                    new_score_list[user_id]['hub'] += self.user_score_list[out_user_id]['auth']
-                new_score_list[user_id]['hub'] /= 100
-                
-            self.user_score_list = copy.deepcopy(new_score_list)
+            self.update_auth_hub_score()
             
-        top_hubs = sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['hub'], reverse = True)[:10]
-        top_auth = sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['auth'], reverse = True)[:10]
-        
+        top_hubs = self.get_top_n_hubs()
+        top_auth = self.get_top_n_auths()
         print "Top Hubs Are:"
         for user in top_hubs:
             print user
@@ -64,11 +66,40 @@ class Basic_Hits():
 
         print 'Hits Calculation Done'
         return
+    
+    def get_top_n_hubs(self, n = 10):
+        return sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['hub'], reverse = True)[:n]
+
+    def get_top_n_auths(self, n =10):
+        return sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['auth'], reverse = True)[:n]
+
+    def spammy_hub(self):
+        top10_auth = self.get_top_n_auths(20)
+        spam_user_data = {"in":[], "out":[], "auth":1.0, "hub":1.0}
+        self.user_list[Basic_Hits.SPAM_HUB_ID] = spam_user_data  
+              
+        for auth in top10_auth:
+            self.user_list[Basic_Hits.SPAM_HUB_ID]["out"].append(auth[0])
+        self.update_auth_hub_score()
+        
+        print "Spam Hub Score:"
+        print self.user_score_list[Basic_Hits.SPAM_HUB_ID]
+        
+        rank = 0
+        for user in sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['hub'], reverse = True):
+            rank += 1
+            if user[0] == Basic_Hits.SPAM_HUB_ID:
+                print "SpamHub Rank is:"+str(rank)
+                break
+
+            
+        
 
 def main():
     hits = Basic_Hits()
     hits.parse_json()
     hits.get_hits()
+    hits.spammy_hub()
 
 if __name__ == "__main__":
     main()

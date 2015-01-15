@@ -73,6 +73,10 @@ class Basic_Hits():
         return sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['auth'], reverse = True)[:n]
 
     def generate_spammy_hub(self, id):
+        '''
+            Create a new spam user which points to top 10 auth
+            and measuring its rank and score
+        '''
         top10_auth = self.get_top_n_auths(10)
         spam_user_data = {"in":[], "out":[], "auth":1.0, "hub":1.0}
         self.user_list[id] = spam_user_data  
@@ -81,17 +85,21 @@ class Basic_Hits():
             self.user_list[id]["out"].append(auth[0])
         self.update_auth_hub_score()
         
-#         print "Spam Hub Score:"
-#         print self.user_score_list[id]
-        
-#         rank = 0
-#         for user in sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['hub'], reverse = True):
-#             rank += 1
-#             if user[0] == id:
-#                 print "SpamHub Rank is:"+str(rank)
-#                 break
+        print "Spam Hub Score:"
+        print self.user_score_list[id]
+         
+        rank = 0
+        for user in sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['hub'], reverse = True):
+            rank += 1
+            if user[0] == id:
+                print "SpamHub Rank is:"+str(rank)
+                break
     
     def generate_spammy_auth(self, id):
+        '''
+            Creating a new spam auth, which gets pointed by 10 spam hubs
+            craeted using the above method
+        '''
         spam_user_data = {"in":[], "out":[], "auth":1.0, "hub":1.0}
         self.user_list[id] = spam_user_data 
         

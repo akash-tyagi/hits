@@ -12,7 +12,6 @@ class Basic_Hits():
     '''
         Class to find the hubs and authorities in a given list
     '''
-    SPAM_HUB_ID = 1
     def __init__(self):
         self.user_list = {}
         self.user_score_list = {}
@@ -73,33 +72,49 @@ class Basic_Hits():
     def get_top_n_auths(self, n =10):
         return sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['auth'], reverse = True)[:n]
 
-    def spammy_hub(self):
-        top10_auth = self.get_top_n_auths(20)
+    def generate_spammy_hub(self, id):
+        top10_auth = self.get_top_n_auths(10)
         spam_user_data = {"in":[], "out":[], "auth":1.0, "hub":1.0}
-        self.user_list[Basic_Hits.SPAM_HUB_ID] = spam_user_data  
+        self.user_list[id] = spam_user_data  
               
         for auth in top10_auth:
-            self.user_list[Basic_Hits.SPAM_HUB_ID]["out"].append(auth[0])
+            self.user_list[id]["out"].append(auth[0])
         self.update_auth_hub_score()
         
-        print "Spam Hub Score:"
-        print self.user_score_list[Basic_Hits.SPAM_HUB_ID]
+#         print "Spam Hub Score:"
+#         print self.user_score_list[id]
         
+#         rank = 0
+#         for user in sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['hub'], reverse = True):
+#             rank += 1
+#             if user[0] == id:
+#                 print "SpamHub Rank is:"+str(rank)
+#                 break
+    
+    def generate_spammy_auth(self, id):
+        spam_user_data = {"in":[], "out":[], "auth":1.0, "hub":1.0}
+        self.user_list[id] = spam_user_data 
+        
+        for i in range(10):
+            self.generate_spammy_hub(i)
+            self.user_list[id]["in"].append(i)
+        
+        self.update_auth_hub_score()
+        print "Spam Auth Score"
+        print self.user_score_list[id]
         rank = 0
-        for user in sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['hub'], reverse = True):
+        for user in sorted(self.user_score_list.iteritems(), key= lambda x: x[1]['auth'], reverse = True):
             rank += 1
-            if user[0] == Basic_Hits.SPAM_HUB_ID:
-                print "SpamHub Rank is:"+str(rank)
+            if user[0] == id:
+                print "SpamAuth Rank is:"+str(rank)
                 break
-
-            
-        
 
 def main():
     hits = Basic_Hits()
     hits.parse_json()
     hits.get_hits()
-    hits.spammy_hub()
+#     hits.generate_spammy_hub(1)
+    hits.generate_spammy_auth(1)
 
 if __name__ == "__main__":
     main()
